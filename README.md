@@ -1,4 +1,4 @@
-# Muex
+# muex
 A composable state management solution for flutter
 
 ### Status
