@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      muex_gen|model_generator:
+        enabled: true
+
+builders:
+  model_generator:
+    target: ":muex_gen"
+    import: "package:muex_gen/muex_gen.dart"
+    builder_factories: ["modelGenerator"]
+    build_extensions: {".dart" : [".g.dart"]}
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]
