@@ -4,7 +4,7 @@ void listTest(MockContext context) {
   group('List', () {
   final CallbackCounter counter = CallbackCounter();
   final List<int> source = Iterable.generate(10).toList().cast<int>();
-    ModelList list;
+    late ModelList list;
     test('Setup', () {
       list = ModelList(() {}, counter, source.take(2).toList());
       expect(list, orderedEquals(source.take(2)));

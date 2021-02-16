@@ -18,19 +18,19 @@ class ModelMap<K, V> extends ModelCollection implements Map<K, V> {
   }
 
   @override
-  bool containsValue(Object value) {
+  bool containsValue(Object? value) {
     _didGet();
     return _source.containsValue(value);
   }
 
   @override
-  bool containsKey(Object key) {
+  bool containsKey(Object? key) {
     _didGet();
     return _source.containsKey(key);
   }
 
   @override
-  V operator[](Object key) {
+  V? operator[](Object? key) {
     _didGet();
     return _source[key];
   }
@@ -113,9 +113,9 @@ class ModelMap<K, V> extends ModelCollection implements Map<K, V> {
   }
 
   @override
-  V update(K key, V update(V value), {V ifAbsent()}) {
+  V update(K key, V update(V value), {V ifAbsent()?}) {
     _debugEnsureUpdate();
-    final V oldValue = _source[key];
+    final V? oldValue = _source[key];
     final V result = _source.update(key, update, ifAbsent: ifAbsent);
     if (result != oldValue) {
       _didUpdate();
@@ -156,14 +156,15 @@ class ModelMap<K, V> extends ModelCollection implements Map<K, V> {
       _source[key] = ifAbsent();
       _didUpdate();
     }
-    return _source[key];
+    // We can safely assume that it won't be null.
+    return _source[key]!;
   }
 
   @override
-  V remove(Object key) {
+  V? remove(Object? key) {
     _debugEnsureUpdate();
     if (_source.containsKey(key)) {
-      final V result = _source.remove(key);
+      final V? result = _source.remove(key);
       _didUpdate();
       return result;
     }

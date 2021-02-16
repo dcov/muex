@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
 import 'package:muex/muex.dart';
 import 'package:test/test.dart';
+
+import 'loop_test.mocks.dart';
 
 class EmptyContainer { }
 
@@ -24,22 +27,15 @@ class TestDiff implements Diff {
   }
 }
 
-// ignore: must_be_immutable
-class MockInitial extends Mock implements Initial { }
-
-// ignore: must_be_immutable
-class MockUpdate extends Mock implements Update { }
-
-// ignore: must_be_immutable
-class MockEffect extends Mock implements Effect { }
-
+@GenerateMocks([Initial, Update, Effect])
 void loopTest() {
   group('Loop', () {
     final state = TestModel();
+    final container = Object();
     final upd = MockUpdate();
     final eff = MockEffect();
 
-    Loop loop;
+    late Loop loop;
     test('Initialization functionality', () {
       when(upd.update(state)).thenAnswer((_) {
         state.count++;
@@ -49,7 +45,7 @@ void loopTest() {
       final initial = MockInitial();
       when(initial.init()).thenReturn(Init(state: state, then: Then(upd)));
 
-      loop = Loop(initial: initial);
+      loop = Loop(initial: initial, container: container);
 
       // Expect that the loop correctly initializes its state with the [MockInitial]'s state value.
       expect(loop.state, state);
@@ -83,7 +79,7 @@ void loopTest() {
         return Then.done();
       });
 
-      when(eff.effect(any)).thenAnswer((_) {
+      when(eff.effect(container)).thenAnswer((_) {
         return Then(upd);
       });
 
@@ -103,7 +99,7 @@ void loopTest() {
         return Then.done();
       });
 
-      when(eff.effect(any)).thenAnswer((_) => completer.future);
+      when(eff.effect(container)).thenAnswer((_) => completer.future);
 
       loop.then(Then(upd));
 
@@ -139,10 +135,10 @@ void loopTest() {
         });
       });
 
-      when(eff.effect(any)).thenAnswer((_) {
+      when(eff.effect(container)).thenAnswer((_) {
         
         // Update the effect so that it doesn't return it anything when it's ran again
-        when(eff.effect(any)).thenAnswer((_) {
+        when(eff.effect(container)).thenAnswer((_) {
           ordering += "f";
           return Then.done();
         });
@@ -178,11 +174,11 @@ void loopTest() {
         });
       });
 
-      when(eff.effect(any)).thenAnswer((_) async {
+      when(eff.effect(container)).thenAnswer((_) async {
         await completer.future;
 
         // The next time effect is processed it'll be synchronous and won't return anything.
-        when(eff.effect(any)).thenAnswer((_) {
+        when(eff.effect(container)).thenAnswer((_) {
           ordering += "f";
           return Then.done();
         });

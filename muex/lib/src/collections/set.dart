@@ -9,7 +9,7 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   ) : super(didGet, didUpdate, Set<E>()..addAll(source));
 
   @override
-  Set<E> get _source => super._source;
+  Set<E> get _source => super._source as Set<E>;
 
   @override
   Set<R> cast<R>() {
@@ -24,19 +24,19 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   }
 
   @override
-  E lookup(Object object) {
+  E? lookup(Object? object) {
     _didGet();
     return _source.lookup(object);
   }
 
   @override
-  bool containsAll(Iterable<Object> other) {
+  bool containsAll(Iterable<Object?> other) {
     _didGet();
     return _source.containsAll(other);
   }
 
   @override
-  Set<E> intersection(Set<Object> other) {
+  Set<E> intersection(Set<Object?> other) {
     _didGet();
     return _source.intersection(other);
   }
@@ -48,7 +48,7 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   }
 
   @override
-  Set<E> difference(Set<Object> other) {
+  Set<E> difference(Set<Object?> other) {
     _didGet();
     return _source.difference(other);
   }
@@ -74,7 +74,7 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   }
 
   @override
-  bool remove(Object value) {
+  bool remove(Object? value) {
     _debugEnsureUpdate();
     if (_source.remove(value)) {
       _didUpdate();
@@ -84,7 +84,7 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   }
 
   @override
-  void removeAll(Iterable<Object> elements) {
+  void removeAll(Iterable<Object?> elements) {
     _debugEnsureUpdate();
     final int oldLength = _source.length;
     _source.removeAll(elements);
@@ -94,7 +94,7 @@ class ModelSet<E> extends _ModelIterable<E> implements Set<E> {
   }
 
   @override
-  void retainAll(Iterable<Object> elements) {
+  void retainAll(Iterable<Object?> elements) {
     _debugEnsureUpdate();
     final int oldLength = _source.length;
     _source.retainAll(elements);

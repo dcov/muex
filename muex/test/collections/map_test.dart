@@ -6,7 +6,7 @@ void mapTest(MockContext context) {
       Iterable.generate(5), Iterable.generate(5)
     );
     final CallbackCounter counter = CallbackCounter();
-    ModelMap map;
+    late ModelMap map;
     test('Setup', () {
       context._canUpdate = true;
       map = ModelMap((){}, counter, Map.from(source));

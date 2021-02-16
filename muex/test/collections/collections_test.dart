@@ -9,7 +9,7 @@ part 'set_test.dart';
 
 class MockContext extends ModelContext {
 
-  bool _canUpdate;
+  late bool _canUpdate;
 
   @override
   void debugEnsureUpdate() {

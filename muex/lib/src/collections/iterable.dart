@@ -47,7 +47,7 @@ abstract class _ModelIterable<E> extends ModelCollection implements Iterable<E> 
   }
 
   @override
-  bool contains(Object element) {
+  bool contains(Object? element) {
     _didGet();
     return _source.contains(element);
   }
@@ -161,19 +161,19 @@ abstract class _ModelIterable<E> extends ModelCollection implements Iterable<E> 
   }
 
   @override
-  E firstWhere(bool test(E element), {E orElse()}) {
+  E firstWhere(bool test(E element), {E orElse()?}) {
     _didGet();
     return _source.firstWhere(test, orElse: orElse);
   }
 
   @override
-  E lastWhere(bool test(E element), {E orElse()}) {
+  E lastWhere(bool test(E element), {E orElse()?}) {
     _didGet();
     return _source.lastWhere(test, orElse: orElse);
   }
 
   @override
-  E singleWhere(bool test(E element), {E orElse()}) {
+  E singleWhere(bool test(E element), {E orElse()?}) {
     _didGet();
     return _source.singleWhere(test, orElse: orElse);
   }
