@@ -8,32 +8,34 @@ part of 'widgets_test.dart';
 
 class _$TestModel implements TestModel {
   _$TestModel({
-    int count,
+    required int count,
   }) {
     this._count = count;
   }
   int get count {
-    ModelContext.instance.didGet(this, (diff) => diff.count = true);
+    ModelContext.instance
+        .didGet(this, (_$TestModelDiff diff) => diff.count = true);
     return _count;
   }
 
-  int _count;
+  late int _count;
   set count(int value) {
     ModelContext.instance.debugEnsureUpdate();
     if (value != _count) {
       _count = value;
-      ModelContext.instance.didUpdate(this, (diff) => diff.count = true);
+      ModelContext.instance
+          .didUpdate(this, (_$TestModelDiff diff) => diff.count = true);
     }
   }
 
   @override
-  __$TestModelDiff createDiff() => __$TestModelDiff();
+  _$TestModelDiff createDiff() => _$TestModelDiff();
 }
 
-class __$TestModelDiff implements Diff {
+class _$TestModelDiff implements Diff {
   bool count = false;
   @override
-  bool compare(__$TestModelDiff other) {
+  bool compare(_$TestModelDiff other) {
     return (this.count && other.count);
   }
 }

@@ -8,9 +8,9 @@ export 'package:muex/muex.dart' show
 class _LoopScope extends InheritedWidget {
 
   _LoopScope({
-    Key key,
-    @required this.loop,
-    Widget child
+    Key? key,
+    required this.loop,
+    required Widget child
   }) : super(key: key, child: child);
 
   final Loop loop;
@@ -24,9 +24,9 @@ class _LoopScope extends InheritedWidget {
 extension LoopExtensions on BuildContext {
 
   Loop get loop {
-    final _LoopScope scope = this.dependOnInheritedWidgetOfExactType();
+    final _LoopScope? scope = this.dependOnInheritedWidgetOfExactType();
     assert(scope != null);
-    return scope.loop;
+    return scope!.loop;
   }
 
   Object get state => loop.state;
@@ -36,9 +36,9 @@ extension LoopExtensions on BuildContext {
 
 @visibleForTesting
 Widget wrapLoop({
-    @required Initial initial,
-    Object container,
-    @required Widget view
+    required Initial initial,
+    Object? container,
+    required Widget view
   }) {
   return _LoopScope(
     loop: Loop(
@@ -48,9 +48,9 @@ Widget wrapLoop({
 }
 
 void runLoop({
-    @required Initial initial,
-    Object container,
-    @required Widget view,
+    required Initial initial,
+    Object? container,
+    required Widget view,
   }) {
   runApp(wrapLoop(
     initial: initial,

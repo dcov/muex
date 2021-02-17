@@ -6,15 +6,15 @@ import 'scope.dart';
 @optionalTypeArgs
 mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
 
-  Loop _loop;
-  Connection _connection;
+  Loop? _loop;
+  Connection? _connection;
 
   @protected
   void capture(StateSetter setState);
 
   void _handleChange([bool canRebuild = true]) {
     bool rebuild = false;
-    _connection.capture((_) {
+    _connection!.capture((_) {
       capture((fn) {
         fn();
         rebuild = true;
@@ -26,7 +26,7 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
 
   void _connect() {
       /// Connect to the loop and use [_handleChange] as the callback so that it can rebuild if the state changes
-      _connection = _loop.connect(_handleChange);
+      _connection = _loop!.connect(_handleChange);
 
       /// Call [_handleChange] so that we can capture the state we need to capture, but don't allow a rebuild since a
       /// rebuild has already been scheduled when this is called.
@@ -34,7 +34,7 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
   }
 
   void _disconnect() {
-    _connection.close();
+    _connection!.close();
     _connection = null;
   }
 
@@ -42,7 +42,6 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final loop = context.loop;
-    assert(loop != null);
 
     /// Update [_loop] and [_connection] if the loop has changed.
     if (loop != _loop) {
@@ -104,10 +103,9 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
 class Connector extends StatefulWidget {
 
   Connector({
-    Key key,
-    @required this.builder,
-  }) : assert(builder != null),
-       super(key: key);
+    Key? key,
+    required this.builder,
+  }) : super(key: key);
 
   /// Called to obtain the resulting [Widget].
   ///
@@ -121,13 +119,14 @@ class Connector extends StatefulWidget {
 
 class _ConnectorState extends State<Connector> with ConnectionStateMixin {
 
-  Widget _child;
+  // This is initialized through [build] which calls [buildCheck] which calls
+  // [capture] in which it then gets initialized.
+  late Widget _child;
 
   @override
   void capture(StateSetter setState) {
     setState((){ 
       _child = widget.builder(context);
-      assert(_child != null, 'Connector.builder returned null');
     });
   }
 
@@ -137,4 +136,3 @@ class _ConnectorState extends State<Connector> with ConnectionStateMixin {
     return _child;
   }
 }
-
