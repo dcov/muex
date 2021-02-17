@@ -24,7 +24,3 @@ dev_dependencies:
   build_runner: ^1.11.1
   logging: ^1.0.0
   test: ^1.15.7
-
-dependency_overrides:
-  muex:
-    path: ../muex
