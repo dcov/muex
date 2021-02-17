@@ -27,3 +27,6 @@
 .pub-cache/
 .pub/
 build/
+
+# Mockito generated test files
+*.mocks.dart

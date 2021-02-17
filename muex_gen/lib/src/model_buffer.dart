@@ -5,20 +5,26 @@ const _didUpdateSignature = 'ModelContext.instance.didUpdate';
 
 const _debugEnsureUpdateCall = 'ModelContext.instance.debugEnsureUpdate();';
 
+const _lateModifier = 'late ';
+
 class FieldBuffer {
 
-  String name;
+  late String name;
 
-  String type;
+  late String type;
 
-  bool hasSetter;
+  late bool hasSetter;
+
+  bool get _isNullable => type.endsWith('?');
 
   String asModelConstructorArgument() {
+    StringBuffer result = StringBuffer(!_isNullable ? 'required ' : '');
     if (hasSetter) {
-      return '$type $name,\n';
+      result.write('$type $name,\n');
     } else {
-      return 'this.$name,\n';
+      result.write('this.$name,\n');
     }
+    return result.toString();
   }
 
   String asModelConstructorBlock() {
@@ -33,8 +39,8 @@ class FieldBuffer {
     return '  $type get $name {\n'
            '    $_didGetSignature(this, (diff) => diff.${name} = true);\n'
            '    return _$name;\n'
-           '  }'
-           '  $type _$name;\n'
+           '  }\n'
+           '  ${!_isNullable ? _lateModifier : ''}$type _$name;\n'
            '  set $name($type value) {\n'
            '    $_debugEnsureUpdateCall\n'
            '    if (value != _$name) {\n'
@@ -55,11 +61,15 @@ class FieldBuffer {
 
 class CollectionFieldBuffer extends FieldBuffer {
 
-  String collectionLiteral;
+  late String collectionLiteral;
 
   @override
   String asModelConstructorArgument() {
-    return '$type $name = const $collectionLiteral,\n';
+    final result = StringBuffer('$type $name');
+    if (!_isNullable)
+      result.write(' = const $collectionLiteral');
+    result.write(',\n');
+    return result.toString();
   }
 
   @override
@@ -73,28 +83,36 @@ class CollectionFieldBuffer extends FieldBuffer {
   String asModelField() {
     final buffer = StringBuffer();
 
+    const _lateModifier = 'late ';
+
     if (!hasSetter) {
       buffer.write(
         '  $type get $name => _$name;\n'
-        '  Model$type _$name;\n'
+        '  ${_lateModifier}Model$type _$name;\n'
       );
     } else {
+      String valueUpdate;
+      if (_isNullable) {
+        valueUpdate = 
+        '    if (value == null) {\n'
+        '      _$name = null;\n'
+        '    } else {\n'
+        '      _$name = Model$type(_${name}InnerGet, _${name}InnerUpdate, value);\n'
+        '    }\n';
+      } else {
+        valueUpdate =
+        '    _$name = Model$type(_${name}InnerGet, _${name}InnerUpdate, value);\n';
+      }
       buffer.write(
         '  $type get $name {\n'
         '    $_didGetSignature(this, (diff) => diff.${name} = true);\n'
         '    return _$name;\n'
         '  }\n'
-        '  Model$type _$name;\n'
+        '  ${_lateModifier}Model$type _$name;\n'
         '  set $name($type value) {\n'
         '    if (value == _$name)\n'
         '      return;\n'
-        '\n'
-        '    if (value == null) {\n'
-        '      _$name = null;\n'
-        '    } else {\n'
-        '      _$name = Model$type(_${name}InnerGet, _${name}InnerUpdate, value);\n'
-        '    }\n'
-        '\n'
+        '$valueUpdate'
         '    $_didUpdateSignature(this, (diff) => diff.${name} = true);\n'
         '  }\n'
       );
@@ -137,16 +155,16 @@ class CollectionFieldBuffer extends FieldBuffer {
 class ModelBuffer {
 
   /// The name of the model that's being generated.
-  String name;
+  late String modelName;
 
   String primaryTypeParameters = '';
 
   String secondaryTypeParameters = '';
 
-  List<FieldBuffer> fields = List<FieldBuffer>();
+  List<FieldBuffer> fields = List<FieldBuffer>.empty(growable: true);
 
   // Return the model name minus the dollar sign.
-  String get _modelName => r'_$' + name;
+  String get _generatedModelName => r'_$' + modelName;
 
   String get _modelConstructor {
     if (fields.isEmpty)
@@ -154,7 +172,7 @@ class ModelBuffer {
 
     final buffer = StringBuffer();
     var fieldsContainVariableOrCollection = false;
-    buffer.write('  $_modelName({\n');
+    buffer.write('  $_generatedModelName({\n');
     for (final field in fields) {
       buffer.write('    ${field.asModelConstructorArgument()}');
       fieldsContainVariableOrCollection = 
@@ -182,7 +200,7 @@ class ModelBuffer {
     return buffer.toString();
   }
 
-  String get _diffName => '_${_modelName}Diff';
+  String get _diffName => '${_generatedModelName}Diff';
 
   String get _diffFields {
     final buffer = StringBuffer();
@@ -213,7 +231,7 @@ class ModelBuffer {
 
   @override
   String toString() =>
-    'class ${_modelName}${primaryTypeParameters} implements ${name}${secondaryTypeParameters} {\n'
+    'class ${_generatedModelName}${primaryTypeParameters} implements ${modelName}${secondaryTypeParameters} {\n'
     '$_modelConstructor'
     '$_modelFields'
     '  @override\n'
