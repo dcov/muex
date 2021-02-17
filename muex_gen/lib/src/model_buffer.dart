@@ -31,13 +31,13 @@ class FieldBuffer {
     return hasSetter ? '    this._$name = $name;\n' : '';
   }
 
-  String asModelField() {
+  String asModelField(String diffType) {
     if (!hasSetter) {
       return '  final $type $name;\n';
     }
 
     return '  $type get $name {\n'
-           '    $_didGetSignature(this, (diff) => diff.${name} = true);\n'
+           '    $_didGetSignature(this, ($diffType diff) => diff.${name} = true);\n'
            '    return _$name;\n'
            '  }\n'
            '  ${!_isNullable ? _lateModifier : ''}$type _$name;\n'
@@ -45,7 +45,7 @@ class FieldBuffer {
            '    $_debugEnsureUpdateCall\n'
            '    if (value != _$name) {\n'
            '      _$name = value;\n'
-           '      $_didUpdateSignature(this, (diff) => diff.$name = true);\n'
+           '      $_didUpdateSignature(this, ($diffType diff) => diff.$name = true);\n'
            '    }\n'
            '  }\n';
   }
@@ -80,7 +80,7 @@ class CollectionFieldBuffer extends FieldBuffer {
   }
 
   @override
-  String asModelField() {
+  String asModelField(String diffType) {
     final buffer = StringBuffer();
 
     const _lateModifier = 'late ';
@@ -105,7 +105,7 @@ class CollectionFieldBuffer extends FieldBuffer {
       }
       buffer.write(
         '  $type get $name {\n'
-        '    $_didGetSignature(this, (diff) => diff.${name} = true);\n'
+        '    $_didGetSignature(this, ($diffType diff) => diff.${name} = true);\n'
         '    return _$name;\n'
         '  }\n'
         '  ${_lateModifier}Model$type _$name;\n'
@@ -113,18 +113,18 @@ class CollectionFieldBuffer extends FieldBuffer {
         '    if (value == _$name)\n'
         '      return;\n'
         '$valueUpdate'
-        '    $_didUpdateSignature(this, (diff) => diff.${name} = true);\n'
+        '    $_didUpdateSignature(this, ($diffType diff) => diff.${name} = true);\n'
         '  }\n'
       );
     }
 
     buffer.write(
       '  void _${name}InnerGet() {\n'
-      '    $_didGetSignature(this, (diff) => diff.${name}Inner = true);\n'
+      '    $_didGetSignature(this, ($diffType diff) => diff.${name}Inner = true);\n'
       '  }\n'
       '  void _${name}InnerUpdate() {\n'
       '    $_debugEnsureUpdateCall\n'
-      '    $_didUpdateSignature(this, (diff) => diff.${name}Inner = true);\n'
+      '    $_didUpdateSignature(this, ($diffType diff) => diff.${name}Inner = true);\n'
       '  }\n'
     );
 
@@ -155,7 +155,7 @@ class CollectionFieldBuffer extends FieldBuffer {
 class ModelBuffer {
 
   /// The name of the model that's being generated.
-  late String modelName;
+  late String modelType;
 
   String primaryTypeParameters = '';
 
@@ -164,7 +164,7 @@ class ModelBuffer {
   List<FieldBuffer> fields = List<FieldBuffer>.empty(growable: true);
 
   // Return the model name minus the dollar sign.
-  String get _generatedModelName => r'_$' + modelName;
+  String get _genModelType => r'_$' + modelType;
 
   String get _modelConstructor {
     if (fields.isEmpty)
@@ -172,7 +172,7 @@ class ModelBuffer {
 
     final buffer = StringBuffer();
     var fieldsContainVariableOrCollection = false;
-    buffer.write('  $_generatedModelName({\n');
+    buffer.write('  $_genModelType({\n');
     for (final field in fields) {
       buffer.write('    ${field.asModelConstructorArgument()}');
       fieldsContainVariableOrCollection = 
@@ -192,15 +192,15 @@ class ModelBuffer {
     return buffer.toString();
   }
 
+  String get _diffType => '${_genModelType}Diff';
+
   String get _modelFields {
     final buffer = StringBuffer();
     for (final field in fields) {
-      buffer.write(field.asModelField());
+      buffer.write(field.asModelField(_diffType));
     }
     return buffer.toString();
   }
-
-  String get _diffName => '${_generatedModelName}Diff';
 
   String get _diffFields {
     final buffer = StringBuffer();
@@ -231,17 +231,17 @@ class ModelBuffer {
 
   @override
   String toString() =>
-    'class ${_generatedModelName}${primaryTypeParameters} implements ${modelName}${secondaryTypeParameters} {\n'
+    'class ${_genModelType}${primaryTypeParameters} implements ${modelType}${secondaryTypeParameters} {\n'
     '$_modelConstructor'
     '$_modelFields'
     '  @override\n'
-    '  $_diffName createDiff() => $_diffName();\n'
+    '  $_diffType createDiff() => $_diffType();\n'
     '}\n'
     '\n'
-    'class $_diffName implements Diff {\n'
+    'class $_diffType implements Diff {\n'
     '$_diffFields'
     '  @override\n'
-    '  bool compare($_diffName other) {\n'
+    '  bool compare($_diffType other) {\n'
     '    return $_diffComparison;\n'
     '  }\n'
     '}\n';

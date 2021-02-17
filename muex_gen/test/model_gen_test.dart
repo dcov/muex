@@ -41,7 +41,7 @@ abstract class Parent extends Model implements Inherited {
 void modelGenTest() {
   test('generateModels test', () async {
     final child = ModelBuffer()
-      ..modelName = 'Child'
+      ..modelType = 'Child'
       ..fields = [
           FieldBuffer()
             ..name = 'count'
@@ -54,7 +54,7 @@ void modelGenTest() {
         ];
 
     final parent = ModelBuffer()
-      ..modelName = r'Parent'
+      ..modelType = r'Parent'
       ..fields = [
           CollectionFieldBuffer()
             ..name = 'children'

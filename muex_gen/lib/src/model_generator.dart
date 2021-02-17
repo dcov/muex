@@ -33,7 +33,7 @@ String generateModels(LibraryReader library) {
 
 void _writeModel(ClassElement klass, StringBuffer result) {
   final buffer = ModelBuffer()
-    ..modelName = klass.name;
+    ..modelType = klass.name;
 
   if (klass.typeParameters.isNotEmpty) {
     final primaryTypeParameters = StringBuffer();
