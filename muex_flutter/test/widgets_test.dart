@@ -32,7 +32,7 @@ class TestWidget extends StatefulWidget {
   _TestWidgetState createState() => _TestWidgetState();
 }
 
-class _TestWidgetState extends State<TestWidget> with ConnectionStateMixin {
+class _TestWidgetState extends State<TestWidget> with ConnectionCaptureStateMixin {
 
   @override
   void capture(_) {
@@ -40,8 +40,7 @@ class _TestWidgetState extends State<TestWidget> with ConnectionStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) {
-    buildCheck();
+  Widget performBuild(BuildContext context) {
     return const SizedBox();
   }
 }

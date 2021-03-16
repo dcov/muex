@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'scope.dart';
 
 @optionalTypeArgs
-mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
+mixin ConnectionCaptureStateMixin<W extends StatefulWidget> on State<W> {
 
   Loop? _loop;
   Connection? _connection;
@@ -20,21 +20,24 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
         rebuild = true;
       });
     });
-    if (rebuild && canRebuild)
+    if (rebuild && canRebuild) {
       setState(() { });
+    }
   }
 
-  void _connect() {
-      /// Connect to the loop and use [_handleChange] as the callback so that it can rebuild if the state changes
-      _connection = _loop!.connect(_handleChange);
+  void _maybeConnect() {
+    if (_connection == null) {
+        /// Connect to the loop and use [_handleChange] as the callback so that it can rebuild if the state changes
+        _connection = _loop!.connect(_handleChange);
 
-      /// Call [_handleChange] so that we can capture the state we need to capture, but don't allow a rebuild since a
-      /// rebuild has already been scheduled when this is called.
-      _handleChange(false);
+        /// Call [_handleChange] so that we can capture the state we need to capture, but don't allow a rebuild since a
+        /// rebuild has already been scheduled when this is called.
+        _handleChange(false);
+    }
   }
 
-  void _disconnect() {
-    _connection!.close();
+  void _maybeDisconnect() {
+    _connection?.close();
     _connection = null;
   }
 
@@ -46,56 +49,90 @@ mixin ConnectionStateMixin<W extends StatefulWidget> on State<W> {
     /// Update [_loop] and [_connection] if the loop has changed.
     if (loop != _loop) {
       _loop = loop;
-      _connection?.close();
-      _connect();
+      _maybeDisconnect();
+      _maybeConnect();
     }
   }
 
   @override
   void deactivate() {
     super.deactivate();
-    /// The [Connection] is disposed here because the [StatefulElement] will
-    /// either be disposed right after, or it will be moved to a different
-    /// location in the tree, in which case we'll reactivate it during [build]
-    /// so that we can preserve the ordering of the tree of [Connector]s.
-    /// 
-    /// This ordering is important because changes are dispatched from
-    /// first-added to last-added (top-to-bottom), because in some cases
-    /// ancestor [Connector]s end up removing descendant [Connector]s after a
-    /// change occurs. In which case it doesn't make sense to notify a defunct
-    /// [Connector] of changes, and avoids unnecessary checks as to the state of
-    /// its lifecycle.
-    ///
-    /// The [Connection] might have already been disposed by a call to
-    /// [reassemble] (i.e. hot-reload), which has led to this element being
-    /// deactivated, hence the check.
-    if (_connection != null) {
-      _disconnect();
-    }
+    _maybeDisconnect();
   }
 
   @override
   void reassemble() {
     super.reassemble();
-    /// The [Connection] is disposed during hot-reloads so that any changes to
-    /// the values of a [Model] can be tracked.
-    if (_connection != null) {
-      _disconnect();
-    }
+    _maybeDisconnect();
   }
+
+  @protected
+  Widget performBuild(BuildContext context);
 
   /// Ensures that a [Connection] is established so that it can track changes.
   ///
   /// This should be called everytime [build] is called because the [Connection]
   /// is disposed every time the [State] is deactivated, or reassembled, and the
   /// only way to re-establish the [Connection] is through the [build] method.
-  @protected
-  @mustCallSuper
-  void buildCheck() {
+  @override
+  Widget build(BuildContext context) {
+    _maybeConnect();
+    return performBuild(context);
+  }
+}
+
+mixin ConnectionBuildStateMixin<W extends StatefulWidget> on State<W> {
+
+  Loop? _loop;
+  Connection? _connection;
+
+  void _handleChange() => setState(() { });
+
+  void _maybeConnect() {
     if (_connection == null) {
-      assert(_loop != null);
-      _connect();
+      _connection = _loop!.connect(_handleChange);
     }
+  }
+
+  void _maybeDisconnect() {
+    _connection?.close();
+    _connection = null;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final loop = context.loop;
+    if (loop != _loop) {
+      _loop = loop;
+      _maybeDisconnect();
+      _maybeConnect();
+    }
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    _maybeDisconnect();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    _maybeDisconnect();
+  }
+
+  @protected
+  Widget performBuild(BuildContext context);
+
+  @override
+  Widget build(BuildContext context) {
+    _maybeConnect();
+    late Widget result;
+    _connection!.capture((_) {
+      result = performBuild(context);
+    });
+    return result;
   }
 }
 
@@ -117,22 +154,10 @@ class Connector extends StatefulWidget {
   _ConnectorState createState() => _ConnectorState();
 }
 
-class _ConnectorState extends State<Connector> with ConnectionStateMixin {
-
-  // This is initialized through [build] which calls [buildCheck] which calls
-  // [capture] in which it then gets initialized.
-  late Widget _child;
+class _ConnectorState extends State<Connector> with ConnectionBuildStateMixin {
 
   @override
-  void capture(StateSetter setState) {
-    setState((){ 
-      _child = widget.builder(context);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    buildCheck();
-    return _child;
+  Widget performBuild(BuildContext context) {
+    return widget.builder(context);
   }
 }
