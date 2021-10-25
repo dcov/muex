@@ -4,8 +4,10 @@ description: Flutter Widgets and helpers for the muex package.
 author: Diego Covarrubias <dcov@pm.me>
 homepage: https://github.com/dcov/muex
 
+publish_to: none
+
 environment:
-  sdk: '>=2.6.0-dev <3.0.0'
+  sdk: '>=2.12.0-0 <3.0.0'
 
 dependencies:
   flutter:
@@ -14,17 +16,19 @@ dependencies:
   muex:
     git:
       url: git://github.com/dcov/muex.git
+      ref: nnbd_migration
       path: muex
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  build_runner: ^1.10.0
+  build_runner: ^1.11.1
 
-  mockito: ^4.1.1
+  mockito: ^5.0.0-nullsafety.7
 
   muex_gen:
     git:
       url: git://github.com/dcov/muex.git
+      ref: nnbd_migration
       path: muex_gen

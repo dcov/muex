@@ -33,16 +33,15 @@ class Then {
 
   Then._(this.action);
 
-  final Object action;
+  final Object? action;
 }
 
 class Init {
 
   Init({
-    @required this.state,
-    @required this.then
-  }) : assert(state != null),
-       assert(then != null);
+    required this.state,
+    required this.then
+  });
 
   /// The state to initialize the loop with.
   final Object state;

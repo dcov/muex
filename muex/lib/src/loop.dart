@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import 'actions.dart';
 import 'model.dart';
 
@@ -24,7 +22,7 @@ class Connection {
     _loop._disconnect(this);
   }
 
-  Map<Model, Diff> _captured;
+  Map<Model, Diff>? _captured;
   void capture(void fn(Object state)) {
     _captured = _loop._capture(() {
       fn(_loop.state);
@@ -34,7 +32,7 @@ class Connection {
   void _didUpdate(Map<Model, Diff> updates) {
     if (_captured?.isNotEmpty == true) {
       for (final update in updates.entries) {
-        final diff = _captured[update.key];
+        final diff = _captured![update.key];
         if (diff != null && diff.compare(update.value)) {
           _captured = null;
           _onConnectionStateChanged();
@@ -48,10 +46,9 @@ class Connection {
 abstract class Loop {
 
   factory Loop({
-    @required Initial initial,
-    Object container,
+    required Initial initial,
+    Object? container,
   }) {
-    assert(initial != null);
     final loop = _ContextLoop(initial, container);
     ModelContext.instance = loop;
     return loop;
@@ -70,18 +67,20 @@ class _ContextLoop implements ModelContext, Loop {
 
   _ContextLoop(
       Initial initial,
-      this.container,
-    ) : assert(initial != null) {
+      Object? container,
+    ) {
+    this.container = container ?? Object();
     _processInitial(initial);
   }
 
   @override
-  final Object container;
+  late final Object container;
 
+  // This is initialized once in _processInitial.
   @override
-  Object state;
+  late final Object state;
 
-  final _connections = List<Connection>();
+  final _connections = List<Connection>.empty(growable: true);
 
   @override
   Connection connect(ConnectionStateChangedCallback callback) {
@@ -94,8 +93,8 @@ class _ContextLoop implements ModelContext, Loop {
     _connections.remove(connection);
   }
 
-  Map<Model, Diff> _currentCapture;
-  Map<Model, Diff> _currentUpdate;
+  Map<Model, Diff>? _currentCapture;
+  Map<Model, Diff>? _currentUpdate;
   bool _initialIsProcessing = false;
   bool _updateIsProcessing = false;
   bool _effectIsProcessing = false;
@@ -107,7 +106,8 @@ class _ContextLoop implements ModelContext, Loop {
   @override
   void didGet<T extends Diff>(Model model, DiffUpdate<T> updateDiff) {
     if (_currentCapture != null) {
-      updateDiff(_currentCapture.putIfAbsent(model, model.createDiff));
+      final diff = _currentCapture!.putIfAbsent(model, model.createDiff) as T;
+      updateDiff(diff);
     }
   }
 
@@ -119,7 +119,9 @@ class _ContextLoop implements ModelContext, Loop {
       return;
 
     debugEnsureUpdate();
-    updateDiff(_currentUpdate.putIfAbsent(model, model.createDiff));
+
+    final diff = _currentUpdate!.putIfAbsent(model, model.createDiff) as T;
+    updateDiff(diff);
   }
 
   @override
@@ -147,7 +149,7 @@ class _ContextLoop implements ModelContext, Loop {
         'synchronous.');
 
     // We're done tracking values that are used so we'll reset our internal state.
-    final captureResult = _currentCapture;
+    final captureResult = _currentCapture!;
     _currentCapture = null;
     return captureResult;
   }
@@ -160,7 +162,7 @@ class _ContextLoop implements ModelContext, Loop {
 
     _currentUpdate = <Model, Diff>{};
     _processUpdate(update);
-    _dispatchUpdates(_currentUpdate);
+    _dispatchUpdates(_currentUpdate!);
     _currentUpdate = null;
   }
 
@@ -178,16 +180,9 @@ class _ContextLoop implements ModelContext, Loop {
   }
 
   void _processInitial(Initial initial) {
-    assert(state == null,
-        'Only one Initial can be processed per loop.');
-
     _initialIsProcessing = true;
     final init = initial.init();
-
-    assert(init.state != null,
-        'Initial returned a null Init.state value');
     state = init.state;
-
     _maybeThen(init.then, initial);
     _initialIsProcessing = false;
   }
@@ -207,23 +202,20 @@ class _ContextLoop implements ModelContext, Loop {
   }
 
   void _maybeThen(FutureOr<Then> value, Action creator) {
-    assert(value != null,
-        '${creator} returned a null Then value. Return Then.done() instead.');
-
     if (value is Future<Then>) {
       value.then((Then result) {
         _maybeThen(result, creator);
       });
-    } else if ((value as Then).action != null) {
+    } else if (value.action != null) {
       then(value);
     }
   }
 
   @override
   void then(Then value) {
-    assert(value != null && value.action != null, 
-        'Loop.then called with either a null Then value, or a Then.done value. '
-        'Loop.then can only be called with a Then.update, Then.effect, or Then.all value.');
+    assert(value.action != null, 
+        'Loop.then called with a Then.done value. Loop.then can only be called with a Then.update, '
+        'Then.effect, or Then.all value.');
 
     // If the Then.action value is processed as a ThenAction, then it is not a
     // Set<ThenAction>, and we don't need to do anything else.
@@ -236,7 +228,7 @@ class _ContextLoop implements ModelContext, Loop {
     }
   }
 
-  bool _maybeProcessThenAction(Object value) {
+  bool _maybeProcessThenAction(Object? value) {
     assert(!_thenActionIsProcessing,
         'Tried to process an Action while a previous Action was still processing.');
 

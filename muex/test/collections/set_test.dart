@@ -4,7 +4,7 @@ void setTest(MockContext context) {
   group('Set', () {
     final List<int> source = Iterable.generate(5).toList().cast<int>();
     final CallbackCounter counter = CallbackCounter();
-    ModelSet set;
+    late ModelSet set;
     test('Setup', () {
       context._canUpdate = true;
       set = ModelSet((){}, counter, {...source.take(2)});

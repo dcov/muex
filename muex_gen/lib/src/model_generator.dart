@@ -22,7 +22,7 @@ String generateModels(LibraryReader library) {
 
   for (final klass in elements) {
     if (!klass.isAbstract) {
-      throw UnsupportedError('Classes that extends Model should be abstract.');
+      throw UnsupportedError('Classes that implements Model should be abstract.');
     }
 
     _writeModel(klass, buffer);
@@ -33,7 +33,7 @@ String generateModels(LibraryReader library) {
 
 void _writeModel(ClassElement klass, StringBuffer result) {
   final buffer = ModelBuffer()
-    ..name = klass.name;
+    ..modelType = klass.name;
 
   if (klass.typeParameters.isNotEmpty) {
     final primaryTypeParameters = StringBuffer();
@@ -53,20 +53,24 @@ void _writeModel(ClassElement klass, StringBuffer result) {
   result.write(buffer);
 }
 
-void _convertTypeParameters(StringBuffer primaryTypeParameters, StringBuffer secondaryTypeParameters, List<TypeParameterElement> tpl) {
+void _convertTypeParameters(
+    StringBuffer primaryTypeParameters,
+    StringBuffer secondaryTypeParameters,
+    List<TypeParameterElement> typeParamsList) {
   primaryTypeParameters.write('<');
   secondaryTypeParameters.write('<');
-  for (int i = 0; i < tpl.length; i++) {
+  for (int i = 0; i < typeParamsList.length; i++) {
     if (i != 0) {
       primaryTypeParameters.write(', ');
       secondaryTypeParameters.write(', ');
     }
 
-    final tpe = tpl[i];
-    primaryTypeParameters.write(tpe.name);
-    secondaryTypeParameters.write(tpe.name);
-    if (tpe.bound != null) {
-      primaryTypeParameters.write(' extends ${tpe.bound.getDisplayString()}');
+    final typeParamElement = typeParamsList[i];
+    primaryTypeParameters.write(typeParamElement.name);
+    secondaryTypeParameters.write(typeParamElement.name);
+    if (typeParamElement.bound != null) {
+      final bound = typeParamElement.bound.getDisplayString(withNullability: true);
+      primaryTypeParameters.write(' extends $bound');
     }
   }
   primaryTypeParameters.write('>');
@@ -78,7 +82,7 @@ FieldBuffer _parseField(FieldElement field) {
     throw UnsupportedError('${field.name} does not have a getter.');
   }
 
-  final InterfaceType fieldType = field.type;
+  final InterfaceType fieldType = field.type as InterfaceType;
   final buffer = () {
     if (fieldType.isDartCoreList) {
       return CollectionFieldBuffer()
@@ -96,9 +100,8 @@ FieldBuffer _parseField(FieldElement field) {
     
   buffer
     ..name = field.name
-    ..type = fieldType.getDisplayString()
+    ..type = fieldType.getDisplayString(withNullability: true)
     ..hasSetter = field.setter != null;
 
   return buffer;
 }
-

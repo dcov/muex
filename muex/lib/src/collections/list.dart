@@ -6,10 +6,10 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
     _DidGetCallback didGet,
     _DidUpdateCallback didUpdate,
     [List<E> source = const []]
-  ) : super(didGet, didUpdate, List<E>()..addAll(source));
+  ) : super(didGet, didUpdate, List.of(source));
 
   @override
-  List<E> get _source => super._source;
+  List<E> get _source => super._source as List<E>;
 
   @override
   List<R> cast<R>() {
@@ -36,7 +36,7 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  int lastIndexOf(E element, [int start]) {
+  int lastIndexOf(E element, [int? start]) {
     _didGet();
     return _source.lastIndexOf(element, start);
   }
@@ -48,7 +48,7 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  int lastIndexWhere(bool test(E element), [int start]) {
+  int lastIndexWhere(bool test(E element), [int? start]) {
     _didGet();
     return _source.lastIndexWhere(test, start);
   }
@@ -66,7 +66,7 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  List<E> sublist(int start, [int end]) {
+  List<E> sublist(int start, [int? end]) {
     _didGet();
     return _source.sublist(start, end);
   }
@@ -131,14 +131,14 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  void sort([int compare(E a, E b)]) {
+  void sort([int compare(E a, E b)?]) {
     _debugEnsureUpdate();
     _source.sort(compare);
     _didUpdate();
   }
 
   @override
-  void shuffle([Random random]) {
+  void shuffle([Random? random]) {
     _debugEnsureUpdate();
     _source.shuffle(random);
     _didUpdate();
@@ -184,7 +184,7 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  bool remove(Object value) {
+  bool remove(Object? value) {
     _debugEnsureUpdate();
     if (_source.remove(value)) {
       _didUpdate();
@@ -248,7 +248,7 @@ class ModelList<E> extends _ModelIterable<E> implements List<E> {
   }
 
   @override
-  void fillRange(int start, int end, [E fillValue]) {
+  void fillRange(int start, int end, [E? fillValue]) {
     _debugEnsureUpdate();
     _source.fillRange(start, end, fillValue);
     if (end - start > 0) {

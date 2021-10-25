@@ -19,11 +19,9 @@ abstract class Model {
 abstract class ModelContext {
 
   static ModelContext get instance {
-    assert(_instance != null,
-      "Tried to access ModelContext.instance before it was set");
-    return _instance;
+    return _instance!;
   }
-  static ModelContext _instance;
+  static ModelContext? _instance;
   static set instance(ModelContext value) {
     _instance = value;
   }

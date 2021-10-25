@@ -16,7 +16,7 @@ part '$_sourceName.g.dart';
 
 abstract class Child extends Model {
 
-  String get string;
+  String? get string;
 
   int count;
 }
@@ -34,14 +34,14 @@ abstract class Parent extends Model implements Inherited {
 
   Set<Child> children;
 
-  Map<String, String> stringMap;
+  Map<String, String>? stringMap;
 }
 ''';
 
 void modelGenTest() {
   test('generateModels test', () async {
     final child = ModelBuffer()
-      ..name = 'Child'
+      ..modelType = 'Child'
       ..fields = [
           FieldBuffer()
             ..name = 'count'
@@ -49,12 +49,12 @@ void modelGenTest() {
             ..hasSetter = true,
           FieldBuffer()
             ..name = 'string'
-            ..type = 'String'
+            ..type = 'String?'
             ..hasSetter = false
         ];
 
     final parent = ModelBuffer()
-      ..name = r'Parent'
+      ..modelType = r'Parent'
       ..fields = [
           CollectionFieldBuffer()
             ..name = 'children'
@@ -63,7 +63,7 @@ void modelGenTest() {
             ..hasSetter = true,
           CollectionFieldBuffer()
             ..name = 'stringMap'
-            ..type = 'Map<String, String>'
+            ..type = 'Map<String, String>?'
             ..collectionLiteral = '{}'
             ..hasSetter = true,
           CollectionFieldBuffer()
@@ -91,4 +91,3 @@ void modelGenTest() {
     expect(output, expectedOutput);
   });
 }
-

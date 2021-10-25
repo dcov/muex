@@ -1,27 +1,29 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:muex/muex.dart';
 import 'package:muex_flutter/muex_flutter.dart';
 
-import 'mocks.dart';
+import 'widgets_test.mocks.dart';
 
 part 'widgets_test.g.dart';
 
 abstract class TestModel extends Model {
 
   factory TestModel({
-    int count
+    required int count
   }) = _$TestModel;
 
-  int count;
+  int get count;
+  set count(int value);
 }
 
 class TestWidget extends StatefulWidget {
 
   TestWidget({
-    Key key,
-    @required this.callback,
+    Key? key,
+    required this.callback,
   }) : super(key: key);
 
   final VoidCallback callback;
@@ -30,7 +32,7 @@ class TestWidget extends StatefulWidget {
   _TestWidgetState createState() => _TestWidgetState();
 }
 
-class _TestWidgetState extends State<TestWidget> with ConnectionStateMixin {
+class _TestWidgetState extends State<TestWidget> with ConnectionCaptureStateMixin {
 
   @override
   void capture(_) {
@@ -38,12 +40,12 @@ class _TestWidgetState extends State<TestWidget> with ConnectionStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) {
-    buildCheck();
+  Widget performBuild(BuildContext context) {
     return const SizedBox();
   }
 }
 
+@GenerateMocks([Initial, Update])
 void widgetsTest() {
   group('widgets', () {
     final model = TestModel(count: 0);
@@ -73,7 +75,7 @@ void widgetsTest() {
 
       expect(callbackCount, 1);
 
-      viewKey.currentContext.then(Then(upd));
+      viewKey.currentContext!.then(Then(upd));
       await tester.pumpAndSettle();
 
       /// Expect that the callback was called as a result of the dispatched action
@@ -84,7 +86,7 @@ void widgetsTest() {
       /// The number of times the [Connector] widget below has called its builder
       int connectorBuildCount = 0;
       /// The [BuildContext] the [Connector] widget below provides to its builder
-      BuildContext connectorContext;
+      late BuildContext connectorContext;
       /// Insert the [Connector] into the tree
       await tester.pumpWidget(wrapLoop(
         initial: initial,
@@ -96,7 +98,7 @@ void widgetsTest() {
             connectorContext  = context;
 
             /// Use the state so that it can be tracked, and we can rebuild when it changes
-            final TestModel state = context.state;
+            final TestModel state = context.state as TestModel;
             return SizedBox(width: state.count.toDouble(), height: state.count.toDouble());
           })));
 
@@ -104,7 +106,6 @@ void widgetsTest() {
       expect(connectorBuildCount, 1);
 
       /// Dispatch the action
-      assert(connectorContext != null);
       connectorContext.then(Then(upd));
       await tester.pumpAndSettle();
 
@@ -143,7 +144,7 @@ void widgetsTest() {
       expect(nodeBuildCount, 1);
       expect(leafBuildCount, 1);
 
-      viewKey.currentContext.then(Then(upd));
+      viewKey.currentContext!.then(Then(upd));
       await tester.pumpAndSettle();
 
       expect(rootBuildCount, 2);
