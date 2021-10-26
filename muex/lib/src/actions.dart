@@ -3,20 +3,39 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 @immutable
-abstract class Action { }
+abstract class _Action { }
 
-abstract class ThenAction implements Action { }
+abstract class Initial implements _Action {
+
+  Init init();
+}
+
+class Init {
+
+  Init({
+    required this.state,
+    required this.then
+  });
+
+  /// The state to initialize the loop with.
+  final Object state;
+
+  /// An Action, Effect, or Set<Action>, that should happen after this initialization.
+  final Then then;
+}
+
+abstract class _ThenAction implements _Action { }
 
 class Then {
 
-  factory Then(ThenAction action) {
+  factory Then(_ThenAction action) {
     assert(action is Update || action is Effect,
         'Then can only take an Update or Effect.');
 
     return Then._(action);
   }
 
-  factory Then.all(Set<ThenAction> actions) {
+  factory Then.all(Set<_ThenAction> actions) {
     assert(() {
       for (final subAction in actions) {
         if (subAction is! Update && subAction is! Effect) {
@@ -36,31 +55,12 @@ class Then {
   final Object? action;
 }
 
-class Init {
-
-  Init({
-    required this.state,
-    required this.then
-  });
-
-  /// The state to initialize the loop with.
-  final Object state;
-
-  /// An Action, Effect, or Set<Action>, that should happen after this initialization.
-  final Then then;
-}
-
-abstract class Initial implements Action {
-
-  Init init();
-}
-
-abstract class Update implements ThenAction {
+abstract class Update implements _ThenAction {
 
   Then update(covariant Object state);
 }
 
-abstract class Effect implements ThenAction {
+abstract class Effect implements _ThenAction {
 
   FutureOr<Then> effect(covariant Object container);
 }
