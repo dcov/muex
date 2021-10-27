@@ -1,5 +1,5 @@
 name: muex
-version: 0.5.1
+version: 0.5.2
 description: A composable state management library.
 author: Diego Covarrubias <dcov@pm.me>
 homepage: https://github.com/dcov/muex
