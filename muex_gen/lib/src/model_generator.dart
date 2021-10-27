@@ -69,7 +69,7 @@ void _convertTypeParameters(
     primaryTypeParameters.write(typeParamElement.name);
     secondaryTypeParameters.write(typeParamElement.name);
     if (typeParamElement.bound != null) {
-      final bound = typeParamElement.bound.getDisplayString(withNullability: true);
+      final bound = typeParamElement.bound!.getDisplayString(withNullability: true);
       primaryTypeParameters.write(' extends $bound');
     }
   }

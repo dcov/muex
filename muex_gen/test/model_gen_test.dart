@@ -87,7 +87,7 @@ void modelGenTest() {
       .toString();
 
     final lib = await resolveSource(_source, (resolver) => resolver.findLibraryByName(_sourceName));
-    final output = generateModels(LibraryReader(lib));
+    final output = generateModels(LibraryReader(lib!));
     expect(output, expectedOutput);
   });
 }
