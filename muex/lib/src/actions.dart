@@ -55,13 +55,44 @@ class Then {
   final Object? action;
 }
 
-abstract class Update implements _ThenAction {
+abstract class Update<T extends Object> implements _ThenAction {
+
+  factory Update(_UpdateCallback<T> callback) = _CallbackUpdate<T>;
 
   Then update(covariant Object state);
 }
 
-abstract class Effect implements _ThenAction {
+typedef _UpdateCallback<T extends Object> = Then Function(T state);
+
+class _CallbackUpdate<T extends Object> implements Update<T> {
+
+  _CallbackUpdate(this.callback);
+
+  final _UpdateCallback<T> callback;
+
+  @override
+  Then update(T state) {
+    return callback(state);
+  }
+}
+
+abstract class Effect<T extends Object> implements _ThenAction {
+
+  factory Effect(_EffectCallback<T> callback) = _CallbackEffect<T>;
 
   FutureOr<Then> effect(covariant Object container);
 }
 
+typedef _EffectCallback<T extends Object> = FutureOr<Then> Function(T container);
+
+class _CallbackEffect<T extends Object> implements Effect<T> {
+
+  _CallbackEffect(this.callback);
+
+  final _EffectCallback<T> callback;
+
+  @override
+  FutureOr<Then> effect(T container) {
+    return callback(container);
+  }
+}
