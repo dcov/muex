@@ -1,9 +1,5 @@
 import 'package:muex/muex.dart';
-import 'package:flutter/widgets.dart';
-
-export 'package:muex/muex.dart' show
-  Loop,
-  Then;
+import 'package:flutter/widgets.dart' hide Action;
 
 class _LoopScope extends InheritedWidget {
 
@@ -31,14 +27,14 @@ extension LoopExtensions on BuildContext {
 
   Object get state => loop.state;
 
-  void then(Then value) => loop.then(value);
+  void then(Action action) => loop.then(action);
 }
 
 @visibleForTesting
 Widget wrapLoop({
     required Object state,
     Object? container,
-    Then? initial,
+    Action? initial,
     required Widget view,
   }) {
   return _LoopScope(
@@ -54,7 +50,7 @@ Widget wrapLoop({
 void runLoop({
     required Object state,
     Object? container,
-    Then? initial,
+    Action? initial,
     required Widget view,
   }) {
   runApp(wrapLoop(

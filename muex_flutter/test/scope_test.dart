@@ -17,7 +17,9 @@ void main() {
     await tester.pumpWidget(wrapLoop(
       state: state,
       view: SizedBox(
-        key: viewKey)));
+        key: viewKey,
+      ),
+    ));
 
     final context = viewKey.currentContext!;
     expect(context.state, state);
@@ -27,9 +29,9 @@ void main() {
     var count = 0;
     when(upd.update(any)).thenAnswer((_) {
       count++;
-      return Then.done();
+      return None();
     });
-    context.then(Then(upd));
+    context.then(upd);
     expect(count, 1);
   });
 }

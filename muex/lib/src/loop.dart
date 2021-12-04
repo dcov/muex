@@ -15,8 +15,8 @@ class Connection {
   final ConnectionStateChangedCallback _onConnectionStateChanged;
   Map<Model, Diff>? _captured;
 
-  void then(Then value) {
-    _loop.then(value);
+  void then(Action action) {
+    _loop.then(action);
   }
 
   void close() {
@@ -48,7 +48,7 @@ abstract class Loop {
   factory Loop({
     required Object state,
     Object? container,
-    Then? then,
+    Action? then,
   }) {
     final loop = _ContextLoop(state, container ?? Object());
     ModelContext.instance = loop;
@@ -64,7 +64,7 @@ abstract class Loop {
 
   Connection connect(ConnectionStateChangedCallback callback);
 
-  void then(Then value);
+  void then(Action action);
 }
 
 class _ContextLoop implements ModelContext, Loop {
@@ -133,14 +133,7 @@ class _ContextLoop implements ModelContext, Loop {
   }
 
   @override
-  void then(Then value, [Object? creator = null]) {
-    assert(value.action != null, 
-        'Loop.then called with a Then.done value. Loop.then can only be called with a Then.update, '
-        'Then.effect, or Then.all value.');
-    _beginActionSequence(value.action);
-  }
-
-  void _beginActionSequence(Object? action) {
+  void then(Action action) {
     _initializeUpdateState();
     _processAction(action);
     _finalizeUpdateState();
@@ -173,11 +166,17 @@ class _ContextLoop implements ModelContext, Loop {
     }
   }
 
-  void _processAction(Object? action) {
-    if (action == null)
-      return;
+  void _processAction(Action action) {
+    assert(action is None ||
+           action is Unchained ||
+           action is Update ||
+           action is Effect);
 
-    bool processAsUpdateOrEffect(Object action) {
+    if (action is None) {
+      return;
+    }
+
+    bool processAsUpdateOrEffect(Action action) {
       assert(!_actionIsProcessing,
           'Tried to process an Action while a previous Action was still processing.');
 
@@ -185,7 +184,7 @@ class _ContextLoop implements ModelContext, Loop {
         _updateIsProcessing = true;
         final result = action.update(state);
         _updateIsProcessing = false;
-        _processAction(result.action);
+        _processAction(result);
 
         return true;
       } else if (action is Effect) {
@@ -193,16 +192,16 @@ class _ContextLoop implements ModelContext, Loop {
         final result = action.effect(container);
         _effectIsProcessing = false;
 
-        if (result is Future<Then>) {
-          result.then((Then async_result) {
+        if (result is Future<Action>) {
+          result.then((Action async_result) {
             if (_currentUpdate == null) {
-              _beginActionSequence(async_result.action);
+              then(async_result);
             } else {
-              _processAction(async_result.action);
+              _processAction(async_result);
             }
           });
         } else {
-          _processAction(result.action);
+          _processAction(result);
         }
 
         return true;
@@ -212,17 +211,19 @@ class _ContextLoop implements ModelContext, Loop {
     }
 
     if (!processAsUpdateOrEffect(action)) {
-      assert(action is Set, 'Expected a set of actions');
-      for (final a in (action as Set)) {
-        final processed = processAsUpdateOrEffect(a);
-        assert(processed, 'Set of actions contained an invalid object.');
+      assert(action is Unchained,
+          '${action.runtimeType} is not a None, Update, Effect or Unchained type');
+
+      final actions = (action as Unchained).actions;
+      for (final a in actions) {
+        _processAction(a);
       }
     }
   }
 
-  void _init(Then then) {
+  void _init(Action action) {
     _initialIsProcessing = true;
-    _processAction(then.action);
+    _processAction(action);
     _initialIsProcessing = false;
   }
 
@@ -234,8 +235,7 @@ class _ContextLoop implements ModelContext, Loop {
 
     final fnResult = fn() as dynamic;
     assert(fnResult is! Future,
-        'Capture function returned a Future. Capture functions can only be '
-        'synchronous.');
+        'Capture function returned a Future. Capture functions must be synchronous.');
 
     final captureResult = _currentCapture!;
     _currentCapture = null;

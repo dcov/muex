@@ -55,7 +55,7 @@ void main() {
     /// The action will increment the model count in order to trigger rebuilds in the tests below
     when(upd.update(any)).thenAnswer((_) {
       model.count++;
-      return Then.done();
+      return None();
     });
 
     testWidgets('ConnectionStateMixin', (WidgetTester tester) async {
@@ -69,11 +69,13 @@ void main() {
             /// Use the model count value so that changes to it are tracked
             final _ = model.count;
             callbackCount++;
-          })));
+          },
+        ),
+      ));
 
       expect(callbackCount, 1);
 
-      viewKey.currentContext!.then(Then(upd));
+      viewKey.currentContext!.then(upd);
       await tester.pumpAndSettle();
 
       /// Expect that the callback was called as a result of the dispatched action
@@ -98,13 +100,15 @@ void main() {
             /// Use the state so that it can be tracked, and we can rebuild when it changes
             final TestModel state = context.state as TestModel;
             return SizedBox(width: state.count.toDouble(), height: state.count.toDouble());
-          })));
+          },
+        ),
+      ));
 
       /// The [Connector] should have only built once so far
       expect(connectorBuildCount, 1);
 
       /// Dispatch the action
-      connectorContext.then(Then(upd));
+      connectorContext.then(upd);
       await tester.pumpAndSettle();
 
       /// The [Connector] should have rebuilt due to the action that was dispatched
@@ -134,15 +138,20 @@ void main() {
                       leafBuildCount++;
                       final _ = model.count;
                       return SizedBox();
-                    });
-                });
-            }))));
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ));
 
       expect(rootBuildCount, 1);
       expect(nodeBuildCount, 1);
       expect(leafBuildCount, 1);
 
-      viewKey.currentContext!.then(Then(upd));
+      viewKey.currentContext!.then(upd);
       await tester.pumpAndSettle();
 
       expect(rootBuildCount, 2);

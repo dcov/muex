@@ -3,66 +3,35 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 @immutable
-abstract class _ThenAction { }
+abstract class Action { }
 
-class Then {
+typedef ActionCallback = Action Function();
 
-  factory Then(_ThenAction action) {
-    assert(action is Update || action is Effect,
-        'Then can only take an Update or Effect.');
-
-    return Then._(action);
-  }
-
-  factory Then.all(Set<_ThenAction> actions) {
-    assert(() {
-      for (final subAction in actions) {
-        if (subAction is! Update && subAction is! Effect) {
-          return false;
-        }
-      }
-      return true;
-    }(),
-    'Then.all can only take a Set with Update or Effect values.');
-    return Then._(actions);
-  }
-
-  factory Then.done() => Then._(null);
-
-  Then._(this.action);
-
-  final Object? action;
+class None implements Action {
+  factory None() => const None._();
+  const None._();
 }
 
-abstract class Update<T extends Object> implements _ThenAction {
+class Unchained implements Action {
+  Unchained(this.actions);
+  final Set<Action> actions;
+}
+
+abstract class Update<T extends Object> implements Action {
 
   factory Update(_UpdateCallback<T> callback) = _CallbackUpdate<T>;
 
-  Then update(covariant Object state);
+  Action update(covariant Object state);
 }
 
-typedef _UpdateCallback<T extends Object> = Then Function(T state);
-
-class _CallbackUpdate<T extends Object> implements Update<T> {
-
-  _CallbackUpdate(this.callback);
-
-  final _UpdateCallback<T> callback;
-
-  @override
-  Then update(T state) {
-    return callback(state);
-  }
-}
-
-abstract class Effect<T extends Object> implements _ThenAction {
+abstract class Effect<T extends Object> implements Action {
 
   factory Effect(_EffectCallback<T> callback) = _CallbackEffect<T>;
 
-  FutureOr<Then> effect(covariant Object container);
+  FutureOr<Action> effect(covariant Object container);
 }
 
-typedef _EffectCallback<T extends Object> = FutureOr<Then> Function(T container);
+typedef _EffectCallback<T extends Object> = FutureOr<Action> Function(T container);
 
 class _CallbackEffect<T extends Object> implements Effect<T> {
 
@@ -71,7 +40,21 @@ class _CallbackEffect<T extends Object> implements Effect<T> {
   final _EffectCallback<T> callback;
 
   @override
-  FutureOr<Then> effect(T container) {
+  FutureOr<Action> effect(T container) {
     return callback(container);
+  }
+}
+
+typedef _UpdateCallback<T extends Object> = Action Function(T state);
+
+class _CallbackUpdate<T extends Object> implements Update<T> {
+
+  _CallbackUpdate(this.callback);
+
+  final _UpdateCallback<T> callback;
+
+  @override
+  Action update(T state) {
+    return callback(state);
   }
 }

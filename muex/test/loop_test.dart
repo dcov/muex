@@ -29,7 +29,7 @@ class TestDiff implements Diff {
 
 @GenerateMocks([Update, Effect])
 void loopTest() {
-  group('Loop', () {
+  group('loop tests', () {
     final state = TestModel();
     final container = Object();
     final upd = MockUpdate();
@@ -39,13 +39,13 @@ void loopTest() {
     test('Initialization functionality', () {
       when(upd.update(state)).thenAnswer((_) {
         state.count++;
-        return Then.done();
+        return None();
       });
 
       loop = Loop(
         state: state,
         container: container,
-        then: Then(upd),
+        then: upd,
       );
 
       // Expect that the loop correctly initializes its state with the [MockInitial]'s state value.
@@ -62,11 +62,11 @@ void loopTest() {
         state.count++;
 
         if (state.count < 3)
-          return Then(upd);
+          return upd;
 
-        return Then.done();
+        return None();
       });
-      loop.then(Then(upd));
+      loop.then(upd);
       expect(state.count, 3);
     });
 
@@ -75,40 +75,40 @@ void loopTest() {
       when(upd.update(state)).thenAnswer((_) {
         state.count++;
         if (state.count < 2)
-          return Then(eff);
+          return eff;
 
-        return Then.done();
+        return None();
       });
 
       when(eff.effect(container)).thenAnswer((_) {
-        return Then(upd);
+        return upd;
       });
 
-      loop.then(Then(upd));
+      loop.then(upd);
       expect(state.count, 2);
     });
 
     test('Asynchronous Effect', () async {
       state.count = 0;
-      final completer = Completer<Then>();
+      final completer = Completer<Action>();
 
       when(upd.update(state)).thenAnswer((_) {
         state.count++;
         if (state.count < 2)
-          return Then(eff);
+          return eff;
 
-        return Then.done();
+        return None();
       });
 
       when(eff.effect(container)).thenAnswer((_) => completer.future);
 
-      loop.then(Then(upd));
+      loop.then(upd);
 
       // Count should not have reached 2 yet because the effect is being waited on.
       expect(state.count, 1);
 
       // Complete the effect.
-      completer.complete(Then(upd));
+      completer.complete(upd);
 
       // We have to await the completer here so that it's guaranteed that the loop has finished awaiting it.
       await completer.future;
@@ -125,12 +125,12 @@ void loopTest() {
         // Update the event so that it doesn't return it anything when it's ran again
         when(upd.update(state)).thenAnswer((_) {
           ordering += "e";
-          return Then.done();
+          return None();
         });
 
         ordering += "e";
         // Note the ordering in which eff and upd are placed in the Set
-        return Then.all({
+        return Unchained({
           eff,
           upd
         });
@@ -141,17 +141,17 @@ void loopTest() {
         // Update the effect so that it doesn't return it anything when it's ran again
         when(eff.effect(container)).thenAnswer((_) {
           ordering += "f";
-          return Then.done();
+          return None();
         });
 
         ordering += "f";
-        return Then.all({
+        return Unchained({
           upd,
           eff
         });
       });
 
-      loop.then(Then(upd));
+      loop.then(upd);
 
       expect(ordering, "efefe");
     });
@@ -165,11 +165,11 @@ void loopTest() {
         // Update the effect so that it doesn't return it anything when it's ran again
         when(upd.update(state)).thenAnswer((_) {
           ordering += "e";
-          return Then.done();
+          return None();
         });
 
         ordering += "e";
-        return Then.all({
+        return Unchained({
           eff,
           upd
         });
@@ -181,17 +181,17 @@ void loopTest() {
         // The next time effect is processed it'll be synchronous and won't return anything.
         when(eff.effect(container)).thenAnswer((_) {
           ordering += "f";
-          return Then.done();
+          return None();
         });
 
         ordering += "f";
-        return Then.all({
+        return Unchained({
           upd,
           eff
         });
       });
 
-      loop.then(Then(upd));
+      loop.then(upd);
 
       expect(ordering, "ee");
 
@@ -210,10 +210,10 @@ void loopTest() {
 
       when(upd.update(state)).thenAnswer((_) {
         state.count++;
-        return Then.done();
+        return None();
       });
 
-      loop.then(Then(upd));
+      loop.then(upd);
       expect(callbackCount, 0);
 
       connection.close();
@@ -233,7 +233,7 @@ void loopTest() {
         context.didUpdate(state, (TestDiff diff) {
           diff.count = true;
         });
-        return Then.done();
+        return None();
       });
 
       connection.capture((_) {
@@ -242,7 +242,7 @@ void loopTest() {
         });
       });
 
-      loop.then(Then(upd));
+      loop.then(upd);
       expect(callbackCount, 1);
 
       connection.close();
