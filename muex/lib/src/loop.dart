@@ -46,12 +46,15 @@ class Connection {
 abstract class Loop {
 
   factory Loop({
-    required Initial initial,
+    required Object state,
     Object? container,
+    Then? then,
   }) {
-    final loop = _ContextLoop(container);
+    final loop = _ContextLoop(state, container ?? Object());
     ModelContext.instance = loop;
-    loop._init(initial);
+    if (then != null) {
+      loop._init(then);
+    }
     return loop;
   }
 
@@ -66,21 +69,16 @@ abstract class Loop {
 
 class _ContextLoop implements ModelContext, Loop {
 
-  _ContextLoop(Object? container) {
-    this.container = container ?? Object();
-    this._connections = List<Connection>.empty(growable: true);
-    this._needRemoving = Set<Connection>.identity();
-  }
+  _ContextLoop(this.state, this.container);
 
   @override
-  late final Object container;
+  final Object state;
 
-  // This is initialized once in _processInitial.
   @override
-  late final Object state;
+  final Object container;
 
-  late final List<Connection> _connections;
-  late final Set<Connection> _needRemoving;
+  final List<Connection> _connections = <Connection>[];
+  final Set<Connection> _needRemoving = <Connection>{};
   bool _dispatchInProgress = false;
 
   Map<Model, Diff>? _currentCapture;
@@ -222,11 +220,9 @@ class _ContextLoop implements ModelContext, Loop {
     }
   }
 
-  void _init(Initial initial) {
+  void _init(Then then) {
     _initialIsProcessing = true;
-    final init = initial.init();
-    state = init.state;
-    _processAction(init.then.action);
+    _processAction(then.action);
     _initialIsProcessing = false;
   }
 

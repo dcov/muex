@@ -27,7 +27,7 @@ class TestDiff implements Diff {
   }
 }
 
-@GenerateMocks([Initial, Update, Effect])
+@GenerateMocks([Update, Effect])
 void loopTest() {
   group('Loop', () {
     final state = TestModel();
@@ -42,10 +42,11 @@ void loopTest() {
         return Then.done();
       });
 
-      final initial = MockInitial();
-      when(initial.init()).thenReturn(Init(state: state, then: Then(upd)));
-
-      loop = Loop(initial: initial, container: container);
+      loop = Loop(
+        state: state,
+        container: container,
+        then: Then(upd),
+      );
 
       // Expect that the loop correctly initializes its state with the [MockInitial]'s state value.
       expect(loop.state, state);

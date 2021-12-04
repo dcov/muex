@@ -7,17 +7,15 @@ import 'package:muex_flutter/muex_flutter.dart';
 
 import 'scope_test.mocks.dart';
 
-@GenerateMocks([Initial, Update])
-void scopeTest() {
-  testWidgets('scope', (WidgetTester tester) async {
+@GenerateMocks([Update])
+void main() {
+  testWidgets('scope test', (WidgetTester tester) async {
     final state = Object();
-    final initial = MockInitial();
-    when(initial.init()).thenReturn(Init(state: state, then: Then.done()));
 
     /// Test the [BuildContext.state] extension
     final viewKey = GlobalKey();
     await tester.pumpWidget(wrapLoop(
-      initial: initial,
+      state: state,
       view: SizedBox(
         key: viewKey)));
 

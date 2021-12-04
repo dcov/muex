@@ -45,13 +45,11 @@ class _TestWidgetState extends State<TestWidget> with ConnectionCaptureStateMixi
   }
 }
 
-@GenerateMocks([Initial, Update])
-void widgetsTest() {
-  group('widgets', () {
+@GenerateMocks([Update])
+void main() {
+  group('widgets test', () {
     final model = TestModel(count: 0);
-    final initial = MockInitial();
     /// The initial will return [model] so that we can update it later
-    when(initial.init()).thenReturn(Init(state: model, then: Then.done()));
 
     final upd = MockUpdate();
     /// The action will increment the model count in order to trigger rebuilds in the tests below
@@ -64,7 +62,7 @@ void widgetsTest() {
       final viewKey = GlobalKey();
       int callbackCount = 0;
       await tester.pumpWidget(wrapLoop(
-        initial: initial,
+        state: model,
         view: TestWidget(
           key: viewKey,
           callback: () {
@@ -89,7 +87,7 @@ void widgetsTest() {
       late BuildContext connectorContext;
       /// Insert the [Connector] into the tree
       await tester.pumpWidget(wrapLoop(
-        initial: initial,
+        state: model,
         view: Connector(
           builder: (BuildContext context) {
             /// Increment the build count
@@ -120,7 +118,7 @@ void widgetsTest() {
       int leafBuildCount = 0;
 
       await tester.pumpWidget(wrapLoop(
-        initial: initial,
+        state: model,
         view: SizedBox(
           key: viewKey,
           child: Connector(

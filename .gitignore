@@ -30,3 +30,4 @@ build/
 
 # Mockito generated test files
 *.mocks.dart
+*.g.dart

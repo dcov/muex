@@ -3,28 +3,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 @immutable
-abstract class _Action { }
-
-abstract class Initial implements _Action {
-
-  Init init();
-}
-
-class Init {
-
-  Init({
-    required this.state,
-    required this.then
-  });
-
-  /// The state to initialize the loop with.
-  final Object state;
-
-  /// An Action, Effect, or Set<Action>, that should happen after this initialization.
-  final Then then;
-}
-
-abstract class _ThenAction implements _Action { }
+abstract class _ThenAction { }
 
 class Then {
 

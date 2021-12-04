@@ -36,25 +36,32 @@ extension LoopExtensions on BuildContext {
 
 @visibleForTesting
 Widget wrapLoop({
-    required Initial initial,
+    required Object state,
     Object? container,
-    required Widget view
+    Then? initial,
+    required Widget view,
   }) {
   return _LoopScope(
     loop: Loop(
-      initial: initial,
-      container: container),
-    child: view);
+      state: state,
+      container: container,
+      then: initial,
+    ),
+    child: view,
+  );
 }
 
 void runLoop({
-    required Initial initial,
+    required Object state,
     Object? container,
+    Then? initial,
     required Widget view,
   }) {
   runApp(wrapLoop(
-    initial: initial,
+    state: state,
     container: container,
-    view: view));
+    initial: initial,
+    view: view,
+  ));
 }
 
