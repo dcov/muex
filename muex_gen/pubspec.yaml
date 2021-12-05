@@ -17,7 +17,7 @@ dependencies:
   muex:
     git:
       url: git://github.com/dcov/muex.git
-      ref: master
+      ref: main
       path: muex
 
   source_gen: ^1.1.1

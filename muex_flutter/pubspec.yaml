@@ -16,7 +16,7 @@ dependencies:
   muex:
     git:
       url: git://github.com/dcov/muex.git
-      ref: master
+      ref: main
       path: muex
 
 dev_dependencies:
@@ -32,5 +32,5 @@ dev_dependencies:
   muex_gen:
     git:
       url: git://github.com/dcov/muex.git
-      ref: master
+      ref: main
       path: muex_gen
