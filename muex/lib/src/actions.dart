@@ -17,6 +17,11 @@ class Unchained implements Action {
   final Set<Action> actions;
 }
 
+class Chained implements Action {
+  Chained(this.actions);
+  final Set<Action> actions;
+}
+
 abstract class Update<T extends Object> implements Action {
 
   factory Update(_UpdateCallback<T> callback) = _CallbackUpdate<T>;

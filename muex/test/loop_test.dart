@@ -29,7 +29,7 @@ class TestDiff implements Diff {
 
 @GenerateMocks([Update, Effect])
 void loopTest() {
-  group('loop tests', () {
+  group('loop tests:', () {
     final state = TestModel();
     final container = Object();
     final upd = MockUpdate();
@@ -200,6 +200,37 @@ void loopTest() {
       await completer.future;
 
       expect(ordering, "eefef");
+    });
+
+    test('Chained actions', () async {
+      var result = '';
+
+      await loop.then(Chained({
+        // The idea here is that this chain of async Effects should all complete before the
+        // Update below runs, and the Update-Effect chain below should complete before... etc.
+        Effect((_) async {
+          result += 'He';
+          return Effect((_) async {
+            result += 'llo';
+            return Effect((_) async {
+              result += ' ';
+              return None();
+            });
+          });
+        }),
+        Update((_) {
+          return Effect((_) async {
+            result += 'World';
+            return None();
+          });
+        }),
+        Update((_) {
+          result += '!';
+          return None();
+        }),
+      }));
+
+      expect(result, matches('Hello World!'));
     });
 
     test('Connection opened with no captured state', () {

@@ -9,7 +9,8 @@ class Connection {
 
   Connection._(
     this._loop,
-    this._onConnectionStateChanged);
+    this._onConnectionStateChanged,
+  );
   
   final _ContextLoop _loop;
   final ConnectionStateChangedCallback _onConnectionStateChanged;
@@ -64,7 +65,7 @@ abstract class Loop {
 
   Connection connect(ConnectionStateChangedCallback callback);
 
-  void then(Action action);
+  FutureOr<void> then(Action action);
 }
 
 class _ContextLoop implements ModelContext, Loop {
@@ -106,6 +107,21 @@ class _ContextLoop implements ModelContext, Loop {
     }
   }
 
+  Map<Model, Diff> _capture(void fn()) {
+    assert(_currentCapture == null, 
+        'Tried to start a capture while another capture was in progress.');
+
+    _currentCapture = <Model, Diff>{};
+
+    final fnResult = fn() as dynamic;
+    assert(fnResult is! Future,
+        'Capture function returned a Future. Capture functions must be synchronous.');
+
+    final captureResult = _currentCapture!;
+    _currentCapture = null;
+    return captureResult;
+  }
+
   @override
   void didGet<T extends Diff>(Model model, DiffUpdate<T> updateDiff) {
     if (_currentCapture != null) {
@@ -133,10 +149,11 @@ class _ContextLoop implements ModelContext, Loop {
   }
 
   @override
-  void then(Action action) {
+  FutureOr<void> then(Action action) {
     _initializeUpdateState();
-    _processAction(action);
+    final result = _processAction(action);
     _finalizeUpdateState();
+    return result;
   }
 
   void _initializeUpdateState() {
@@ -166,80 +183,117 @@ class _ContextLoop implements ModelContext, Loop {
     }
   }
 
-  void _processAction(Action action) {
-    assert(action is None ||
-           action is Unchained ||
-           action is Update ||
-           action is Effect);
-
-    if (action is None) {
-      return;
-    }
-
-    bool processAsUpdateOrEffect(Action action) {
-      assert(!_actionIsProcessing,
-          'Tried to process an Action while a previous Action was still processing.');
-
-      if (action is Update) {
-        _updateIsProcessing = true;
-        final result = action.update(state);
-        _updateIsProcessing = false;
-        _processAction(result);
-
-        return true;
-      } else if (action is Effect) {
-        _effectIsProcessing = true;
-        final result = action.effect(container);
-        _effectIsProcessing = false;
-
-        if (result is Future<Action>) {
-          result.then((Action async_result) {
-            if (_currentUpdate == null) {
-              then(async_result);
-            } else {
-              _processAction(async_result);
-            }
-          });
-        } else {
-          _processAction(result);
-        }
-
-        return true;
-      }
-
-      return false;
-    }
-
-    if (!processAsUpdateOrEffect(action)) {
-      assert(action is Unchained,
-          '${action.runtimeType} is not a None, Update, Effect or Unchained type');
-
-      final actions = (action as Unchained).actions;
-      for (final a in actions) {
-        _processAction(a);
-      }
-    }
-  }
-
   void _init(Action action) {
     _initialIsProcessing = true;
     _processAction(action);
     _initialIsProcessing = false;
   }
 
-  Map<Model, Diff> _capture(void fn()) {
-    assert(_currentCapture == null, 
-        'Tried to start a capture while another capture was in progress.');
+  FutureOr<void> _processAction(Action action) {
+    assert(!_actionIsProcessing,
+        'Tried to process an Action while a previous Action was still processing.');
 
-    _currentCapture = <Model, Diff>{};
+    if (action is Unchained) {
+      return _processUnchained(action);
+    } else if (action is Chained) {
+      return _processChained(action);
+    } else if (action is Update) {
+      return _processUpdate(action);
+    } else if (action is Effect) {
+      return _processEffect(action);
+    } else {
+      assert(action is None);
+    }
+  }
 
-    final fnResult = fn() as dynamic;
-    assert(fnResult is! Future,
-        'Capture function returned a Future. Capture functions must be synchronous.');
+  FutureOr<void> _processUnchained(Unchained unchained) {
+    final futures = <Future<void>>[];
+    for (final action in unchained.actions) {
+      final result = _processAction(action);
+      if (result is Future) {
+        futures.add(result);
+      }
+    }
 
-    final captureResult = _currentCapture!;
-    _currentCapture = null;
-    return captureResult;
+    if (futures.isNotEmpty) {
+      final completer = Completer<void>();
+      var remaining = futures.length;
+      for (final future in futures) {
+        future.then((_) {
+          assert(remaining > 0);
+          remaining--;
+          if (remaining == 0) {
+            completer.complete();
+          }
+        });
+      }
+      return completer.future;
+    }
+  }
+
+  FutureOr<void> _processChained(Chained chained) {
+    var i = 0;
+    FutureOr<void> nextInChain([Completer<void>? completer]) {
+      if (i < chained.actions.length) {
+        final action = chained.actions.elementAt(i);
+        i += 1;
+
+        FutureOr<void> result;
+        if (_currentUpdate == null) {
+          result = then(action);
+        } else {
+          result = _processAction(action);
+        }
+
+        if (result is Future<void>) {
+          completer ??= Completer<void>();
+          result.then((_) {
+            nextInChain(completer);
+          });
+          return completer.future;
+        } else {
+          return nextInChain(completer);
+        }
+      } else if (completer != null) {
+        completer.complete();
+      }
+    }
+    return nextInChain();
+  }
+
+  FutureOr<void> _processUpdate(Update upd) {
+    _updateIsProcessing = true;
+    final result = upd.update(state);
+    _updateIsProcessing = false;
+    return _processAction(result);
+  }
+
+  FutureOr<void> _processEffect(Effect eff) {
+    _effectIsProcessing = true;
+    final result = eff.effect(container);
+    _effectIsProcessing = false;
+
+    if (result is Future<Action>) {
+      final completer = Completer<void>();
+      result.then((Action action) {
+        FutureOr<void> nextResult;
+        if (_currentUpdate == null) {
+          nextResult = then(action);
+        } else {
+          nextResult = _processAction(action);
+        }
+        if (nextResult is Future<void>) {
+          nextResult.then((_) {
+            completer.complete();
+          });
+        } else {
+          completer.complete();
+        }
+      });
+      return completer.future;
+    } else {
+      return _processAction(result);
+    }
   }
 }
 
