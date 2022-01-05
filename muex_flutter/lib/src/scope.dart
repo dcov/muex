@@ -41,7 +41,7 @@ Widget wrapLoop({
     loop: Loop(
       state: state,
       container: container,
-      then: initial,
+      initial: initial,
     ),
     child: view,
   );

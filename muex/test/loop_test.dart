@@ -45,7 +45,7 @@ void loopTest() {
       loop = Loop(
         state: state,
         container: container,
-        then: upd,
+        initial: upd,
       );
 
       // Expect that the loop correctly initializes its state with the [MockInitial]'s state value.

@@ -49,12 +49,12 @@ abstract class Loop {
   factory Loop({
     required Object state,
     Object? container,
-    Action? then,
+    Action? initial,
   }) {
     final loop = _ContextLoop(state, container ?? Object());
     ModelContext.instance = loop;
-    if (then != null) {
-      loop._init(then);
+    if (initial != null) {
+      loop._init(initial);
     }
     return loop;
   }
